@@ -39,6 +39,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const [slotStartTime, setSlotStartTime] = useState('');
   const [slotEndTime, setSlotEndTime] = useState('');
 
+  // Toast notification state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 2000);
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -110,9 +118,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       }
       await loadData();
       setModalVisible(false);
-      alert('保存成功！提醒功能将在后续版本中启用。');
+      showToast('保存成功', 'success');
     } catch {
-      alert('保存失败，请重试');
+      showToast('保存失败，请重试', 'error');
     }
   };
 
@@ -136,7 +144,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const handleSaveTimeSlot = async () => {
     if (editingSlotIndex === null) return;
     if (!slotLabel.trim()) {
-      alert('请输入时间段名称');
+      showToast('请输入时间段名称', 'error');
       return;
     }
     await updateTimeSlot(editingSlotIndex, slotLabel.trim(), slotStartTime, slotEndTime);
@@ -325,6 +333,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Toast notification */}
+      {toast && (
+        <div className={`toast-notification toast-${toast.type}`}>
+          {toast.message}
         </div>
       )}
     </div>
