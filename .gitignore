@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+*.exe
+*.blockmap
+builder-debug.yml
+.DS_Store
+Thumbs.db
+test-*.js
+test-*.mjs
