@@ -1,6 +1,6 @@
 {
   "name": "class-schedule-desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "课表助手 - Windows桌面版",
   "main": "src-electron/main.js",
   "scripts": {
@@ -12,7 +12,8 @@
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "sql.js": "^1.12.0"
+    "sql.js": "^1.12.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",

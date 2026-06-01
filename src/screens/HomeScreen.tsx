@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScheduleTable } from '../components/ScheduleTable';
 import { TimePicker } from '../components/TimePicker';
-import { ClassSchedule, TimeSlot } from '../types';
+import { ClassSchedule, TimeSlot, DutyButton, CellStyle } from '../types';
 import {
-  getSchedules,
-  addSchedule,
-  updateSchedule,
-  deleteSchedule,
-  getTimeSlots,
-  updateTimeSlot,
+  getSchedules, addSchedule, updateSchedule, deleteSchedule,
+  addSchedulesBatch, updateSchedulesBatch,
+  getTimeSlots, updateTimeSlot,
+  getDutyButtons, addDutyButton, deleteDutyButton, updateDutyButton,
+  exportExcel,
 } from '../services/database';
 import './HomeScreen.css';
 
 interface HomeScreenProps {
-  onNavigate: (screen: string, params?: { scheduleId: number; className: string }) => void;
+  onNavigate: (screen: string, params?: { scheduleId: number; className: string } | { buttonId: number; buttonLabel: string }) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
@@ -32,6 +31,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const [specificTime, setSpecificTime] = useState('');
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
 
+  // Cell formatting state
+  const [cellFontSize, setCellFontSize] = useState<CellStyle['fontSize']>('medium');
+  const [cellBold, setCellBold] = useState(false);
+  const [cellItalic, setCellItalic] = useState(false);
+  const [cellTextColor, setCellTextColor] = useState('#000000');
+
   // Time slot modal state
   const [timeSlotModalVisible, setTimeSlotModalVisible] = useState(false);
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
@@ -41,6 +46,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 
   // Toast notification state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Duty buttons state
+  const [dutyButtons, setDutyButtons] = useState<DutyButton[]>([]);
+  const [showAddDuty, setShowAddDuty] = useState(false);
+  const [dutyLabel, setDutyLabel] = useState('');
+  const [editingDutyId, setEditingDutyId] = useState<number | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -52,30 +63,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   }, []);
 
   const loadData = useCallback(async () => {
-    const [scheduleData, slotsData] = await Promise.all([
+    const [scheduleData, slotsData, buttonsData] = await Promise.all([
       getSchedules(),
       getTimeSlots(),
+      getDutyButtons(),
     ]);
     setSchedules(scheduleData);
     setTimeSlots(slotsData);
+    setDutyButtons(buttonsData);
   }, []);
 
   const handleCellPress = (row: number, col: number, schedule?: ClassSchedule) => {
-    if (schedule) {
+    if (schedule && schedule.className) {
       onNavigate('ClassRecord', {
         scheduleId: schedule.id,
         className: schedule.className,
       });
     } else {
       setSelectedCell({ row, col });
-      setEditingSchedule(null);
-      setClassName('');
-      setReminderEnabled(false);
-      setReminderMode('before');
-      setReminderMinutes('15');
-      setReminderType('both');
-      setSpecificDate('');
-      setSpecificTime('');
+      setEditingSchedule(schedule || null);
+      setClassName(schedule?.className || '');
+      setReminderEnabled(schedule?.reminderEnabled || false);
+      setReminderMode(schedule?.reminderMode || 'before');
+      setReminderMinutes(String(schedule?.reminderMinutes || 15));
+      setReminderType(schedule?.reminderType || 'both');
+      setSpecificDate(schedule?.specificReminderDate || '');
+      setSpecificTime(schedule?.specificReminderTime || '');
+      setCellFontSize(schedule?.cellStyle?.fontSize || 'medium');
+      setCellBold(schedule?.cellStyle?.bold || false);
+      setCellItalic(schedule?.cellStyle?.italic || false);
+      setCellTextColor(schedule?.cellStyle?.color || '#000000');
       setModalVisible(true);
     }
   };
@@ -91,12 +108,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       setReminderType(schedule.reminderType);
       setSpecificDate(schedule.specificReminderDate || '');
       setSpecificTime(schedule.specificReminderTime || '');
+      setCellFontSize(schedule.cellStyle?.fontSize || 'medium');
+      setCellBold(schedule.cellStyle?.bold || false);
+      setCellItalic(schedule.cellStyle?.italic || false);
+      setCellTextColor(schedule.cellStyle?.color || '#000000');
       setModalVisible(true);
     }
   };
 
   const handleSave = async () => {
     if (!className.trim() || !selectedCell) return;
+
+    const cellStyle: CellStyle | undefined = (cellFontSize !== 'medium' || cellBold || cellItalic || cellTextColor !== '#000000')
+      ? {
+          fontSize: cellFontSize !== 'medium' ? cellFontSize : undefined,
+          bold: cellBold || undefined,
+          italic: cellItalic || undefined,
+          color: cellTextColor !== '#000000' ? cellTextColor : undefined,
+        }
+      : undefined;
 
     const scheduleData = {
       row: selectedCell.row,
@@ -108,6 +138,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
       reminderType,
       specificReminderDate: reminderMode === 'specific' ? specificDate : undefined,
       specificReminderTime: reminderMode === 'specific' ? specificTime : undefined,
+      cellStyle,
     };
 
     try {
@@ -124,11 +155,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!editingSchedule) return;
     if (window.confirm(`确定要删除课程"${editingSchedule.className}"吗？`)) {
-      deleteSchedule(editingSchedule.id).then(loadData);
-      setModalVisible(false);
+      try {
+        await deleteSchedule(editingSchedule.id);
+        await loadData();
+        setModalVisible(false);
+        showToast('删除成功', 'success');
+      } catch {
+        showToast('删除失败，请重试', 'error');
+      }
     }
   };
 
@@ -152,11 +189,155 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     setTimeSlotModalVisible(false);
   };
 
+  const handleAddDutyButton = async () => {
+    if (!dutyLabel.trim()) return;
+    if (editingDutyId !== null) {
+      await updateDutyButton(editingDutyId, dutyLabel.trim());
+    } else {
+      const sortOrder = dutyButtons.length;
+      await addDutyButton(dutyLabel.trim(), sortOrder);
+    }
+    setDutyLabel('');
+    setEditingDutyId(null);
+    setShowAddDuty(false);
+    await loadData();
+  };
+
+  const handleEditDutyButton = (btn: DutyButton) => {
+    setDutyLabel(btn.label);
+    setEditingDutyId(btn.id);
+    setShowAddDuty(true);
+  };
+
+  const handleDeleteDutyButton = async (id: number) => {
+    if (!window.confirm('确定要删除该按钮及其所有表格数据吗？')) return;
+    try {
+      await deleteDutyButton(id);
+      await loadData();
+      showToast('删除成功', 'success');
+    } catch {
+      showToast('删除失败，请重试', 'error');
+    }
+  };
+
+  const handleBatchFormat = async (cells: { row: number; col: number; scheduleId?: number }[], style: CellStyle) => {
+    // Update existing schedules
+    const updatedSchedules = cells
+      .filter(c => c.scheduleId !== undefined)
+      .map(c => {
+        const s = schedules.find(s => s.row === c.row && s.col === c.col);
+        if (!s) return null;
+        return { ...s, cellStyle: { ...s.cellStyle, ...style } };
+      })
+      .filter(Boolean) as ClassSchedule[];
+
+    // Create new empty schedule records for cells without data (so bgColor persists)
+    const hasBgOnly = style.bgColor && Object.keys(style).length === 1;
+    const newSchedules: Omit<ClassSchedule, 'id'>[] = [];
+    if (hasBgOnly) {
+      for (const c of cells) {
+        if (c.scheduleId !== undefined) continue;
+        const existing = schedules.find(s => s.row === c.row && s.col === c.col);
+        if (!existing) {
+          newSchedules.push({
+            row: c.row, col: c.col, className: '',
+            reminderEnabled: false, reminderMinutes: 15, reminderType: 'both', reminderMode: 'before',
+            cellStyle: style,
+          });
+        }
+      }
+    }
+
+    let count = 0;
+    if (updatedSchedules.length > 0) {
+      await updateSchedulesBatch(updatedSchedules);
+      count += updatedSchedules.length;
+    }
+    if (newSchedules.length > 0) {
+      await addSchedulesBatch(newSchedules);
+      count += newSchedules.length;
+    }
+    if (count > 0) {
+      await loadData();
+      showToast(`已更新 ${count} 个单元格格式`, 'success');
+    }
+  };
+
+  const handleBatchColor = async (cells: { row: number; col: number; scheduleId?: number }[], color: string) => {
+    handleBatchFormat(cells, { bgColor: color });
+  };
+
+  const handlePaste = async (cells: { row: number; col: number; value: string }[]) => {
+    const newSchedules: Omit<ClassSchedule, 'id'>[] = [];
+    const updatedSchedules: ClassSchedule[] = [];
+    for (const { row, col, value } of cells) {
+      const existing = schedules.find(s => s.row === row && s.col === col);
+      if (existing) {
+        updatedSchedules.push({ ...existing, className: value });
+      } else if (value.trim()) {
+        newSchedules.push({
+          row, col, className: value.trim(),
+          reminderEnabled: false, reminderMinutes: 15, reminderType: 'both', reminderMode: 'before',
+        });
+      }
+    }
+    if (newSchedules.length > 0) await addSchedulesBatch(newSchedules);
+    if (updatedSchedules.length > 0) await updateSchedulesBatch(updatedSchedules);
+    await loadData();
+    showToast('粘贴成功', 'success');
+  };
+
+  const handleExport = () => {
+    const grid: string[][] = [];
+    grid.push(['星期', ...Array.from({ length: 12 }, (_, i) => timeSlots.find(s => s.slotIndex === i)?.label || `第${i + 1}节`)]);
+    for (let r = 0; r < 7; r++) {
+      const row: string[] = [WEEK_DAYS[r]];
+      for (let c = 0; c < 12; c++) {
+        const s = schedules.find(s => s.row === r && s.col === c);
+        row.push(s?.className || '');
+      }
+      grid.push(row);
+    }
+    exportExcel('课程表', grid);
+  };
+
+  const WEEK_DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+  // Listen for menu export event
+  useEffect(() => {
+    if (window.electronAPI?.onMenuExport) {
+      const cleanup = window.electronAPI.onMenuExport(() => handleExport());
+      return cleanup;
+    }
+  }, [schedules, timeSlots]);
+
   return (
     <div className="home-container">
       <div className="home-header">
         <h1 className="home-title">课表助手</h1>
-        <p className="home-subtitle">点击空单元格添加课程 | 点击课程查看记录 | 右键编辑 | 点击顶部时间段修改时间</p>
+        {/* Duty buttons row below title */}
+        <div className="duty-buttons-bar">
+          {dutyButtons.map(btn => (
+            <div key={btn.id} className="duty-btn-wrapper">
+              <button
+                className="duty-nav-btn"
+                onClick={() => onNavigate('DutyTable', { buttonId: btn.id, buttonLabel: btn.label })}
+                onContextMenu={e => { e.preventDefault(); handleEditDutyButton(btn); }}
+                title="点击打开 | 右键编辑"
+              >
+                {btn.label}
+              </button>
+              <span className="duty-btn-delete" onClick={() => handleDeleteDutyButton(btn.id)} title="删除">×</span>
+            </div>
+          ))}
+          <button
+            className="duty-nav-btn duty-add-btn"
+            onClick={() => { setDutyLabel(''); setEditingDutyId(null); setShowAddDuty(true); }}
+            title="添加值班表按钮"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <ScheduleTable
@@ -165,7 +346,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         onCellPress={handleCellPress}
         onCellLongPress={handleCellLongPress}
         onTimeSlotPress={handleTimeSlotPress}
+        onBatchFormat={handleBatchFormat}
+        onBatchColor={handleBatchColor}
+        onPaste={handlePaste}
+        onExport={handleExport}
       />
+
+      {/* Add/Edit duty button dialog */}
+      {showAddDuty && (
+        <div className="modal-overlay" onClick={() => setShowAddDuty(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">{editingDutyId !== null ? '编辑按钮' : '添加按钮'}</h3>
+            <div className="form-group">
+              <label className="form-label">按钮名称</label>
+              <input
+                className="form-input"
+                value={dutyLabel}
+                onChange={e => setDutyLabel(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddDutyButton(); if (e.key === 'Escape') setShowAddDuty(false); }}
+                autoFocus
+              />
+            </div>
+            <div className="modal-buttons">
+              <button className="btn btn-cancel" onClick={() => setShowAddDuty(false)}>取消</button>
+              <button className="btn btn-save" onClick={handleAddDutyButton}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Course edit modal */}
       {modalVisible && (
@@ -185,6 +393,46 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 onChange={e => setClassName(e.target.value)}
                 autoFocus
               />
+            </div>
+
+            {/* Formatting toolbar */}
+            <div className="formatting-section">
+              <label className="form-label">单元格格式</label>
+              <div className="format-row">
+                <span className="format-label">字号</span>
+                <div className="btn-group">
+                  {(['small', 'medium', 'large'] as const).map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      className={`btn-option ${cellFontSize === size ? 'active' : ''}`}
+                      onClick={() => setCellFontSize(size)}
+                    >
+                      {size === 'small' ? '小' : size === 'medium' ? '中' : '大'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="format-row">
+                <span className="format-label">样式</span>
+                <div className="btn-group">
+                  <button
+                    type="button"
+                    className={`btn-option ${cellBold ? 'active' : ''}`}
+                    onClick={() => setCellBold(!cellBold)}
+                  ><strong>B</strong></button>
+                  <button
+                    type="button"
+                    className={`btn-option ${cellItalic ? 'active' : ''}`}
+                    onClick={() => setCellItalic(!cellItalic)}
+                  ><em>I</em></button>
+                </div>
+              </div>
+              <div className="format-row">
+                <span className="format-label">字体色</span>
+                <input className="color-input" type="color" value={cellTextColor}
+                  onChange={e => setCellTextColor(e.target.value)} />
+              </div>
             </div>
 
             <div className="reminder-section">
