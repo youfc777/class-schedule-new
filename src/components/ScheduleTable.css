@@ -1,0 +1,375 @@
+.schedule-table-wrapper {
+  overflow: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.schedule-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 1100px;
+  width: max(1100px, 100%);
+}
+
+.schedule-table th,
+.schedule-table td {
+  border: 1px solid #ddd;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Header cells */
+.corner-cell {
+  width: 70px;
+  height: 50px;
+  background: #388E3C;
+  color: #fff;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.time-header-cell {
+  width: 85px;
+  height: 50px;
+  background: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+  padding: 4px 2px;
+}
+
+.time-header-cell:hover {
+  background: #43A047;
+}
+
+.time-header-label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.time-header-range {
+  font-size: 9px;
+  opacity: 0.9;
+  line-height: 1.3;
+}
+
+.time-edit-hint {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Weekday label cells */
+.weekday-cell {
+  width: 70px;
+  height: 55px;
+  background: #E8F5E9;
+  color: #2E7D32;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Schedule cells */
+.cell {
+  height: 55px;
+  background: #fff;
+  cursor: pointer;
+  padding: 2px 4px;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.cell:hover {
+  background: #f0f0f0;
+}
+
+.filled-cell {
+  background: #E3F2FD;
+}
+
+.filled-cell:hover {
+  background: #BBDEFB;
+}
+
+.reminder-cell {
+  background: #FFF3E0;
+}
+
+.reminder-cell:hover {
+  background: #FFE0B2;
+}
+
+.cell-class-name {
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+.reminder-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #FF5722;
+}
+
+/* ====================== TOOLBAR ====================== */
+.schedule-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.toolbar-hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.selected-count {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.toolbar-btn {
+  padding: 5px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+  border-color: #4CAF50;
+  color: #4CAF50;
+}
+
+/* ====================== CTRL-SELECTED ====================== */
+.ctrl-selected-cell {
+  border: 2px solid #4CAF50 !important;
+  background: #C8E6C9 !important;
+}
+
+/* ====================== FORMAT POPUP ====================== */
+.format-popup {
+  position: fixed;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  z-index: 2002;
+  min-width: 260px;
+}
+
+.format-popup-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.format-popup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.format-popup-label {
+  font-size: 12px;
+  color: #666;
+  min-width: 42px;
+}
+
+.format-btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.format-btn {
+  padding: 4px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.format-btn:hover {
+  border-color: #4CAF50;
+}
+
+.format-btn.active {
+  background: #4CAF50;
+  border-color: #4CAF50;
+  color: #fff;
+}
+
+.format-color-input {
+  width: 32px;
+  height: 28px;
+  padding: 1px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.format-popup-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.format-apply-btn {
+  padding: 6px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #4CAF50;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.format-apply-btn:hover {
+  background: #43A047;
+}
+
+.format-cancel-btn {
+  padding: 6px 18px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.format-cancel-btn:hover {
+  background: #f5f5f5;
+}
+
+/* ====================== ROW/COL HEADER SELECTION ====================== */
+.col-header-selected {
+  background: #1565C0 !important;
+}
+
+.weekday-selected {
+  background: #1565C0 !important;
+  color: #fff !important;
+}
+
+.row-selected-tr .cell {
+  background: #BBDEFB !important;
+}
+
+.rowcol-selected-cell {
+  background: #BBDEFB !important;
+}
+
+/* ====================== DRAG-SELECTED ====================== */
+.selected-cell {
+  background: #BBDEFB !important;
+}
+
+/* ====================== COLOR PICKER POPUP ====================== */
+.color-picker-popup {
+  position: fixed;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  z-index: 2002;
+  min-width: 200px;
+}
+
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  transition: transform 0.1s;
+}
+
+.color-swatch:hover {
+  transform: scale(1.2);
+  border-color: #333;
+}
+
+.color-cancel-btn {
+  padding: 4px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.color-cancel-btn:hover {
+  background: #f5f5f5;
+}
+
+/* ── Cell context menu (mobile long-press) ─────────────────── */
+.cell-context-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1999; background: transparent;
+}
+.cell-context-menu {
+  position: fixed; z-index: 2000;
+  background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 4px 0; min-width: 140px;
+}
+.cell-context-menu button {
+  display: block; width: 100%; padding: 12px 16px;
+  border: none; background: none; text-align: left;
+  font-size: 14px; cursor: pointer; color: #333;
+}
+.cell-context-menu button:active {
+  background: #f0f0f0;
+}
+
+/* ── Color picker overlay (higher z-index than context menu) ── */
+.color-picker-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 2001; background: transparent;
+}
+
+/* ── Mobile responsive ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .schedule-table { min-width: 100%; width: 100%; font-size: 12px; }
+  .corner-cell { width: 36px; height: 34px; font-size: 10px; }
+  .time-header-cell { width: 48px; height: 34px; padding: 1px; }
+  .time-header-label { font-size: 8px; }
+  .time-header-range { font-size: 7px; }
+  .weekday-cell { width: 36px; height: 38px; font-size: 10px; }
+  .cell { height: 38px; padding: 1px 2px; }
+  .schedule-toolbar { padding: 4px 6px; gap: 4px; }
+  .toolbar-hint { font-size: 10px; }
+  .format-popup { min-width: 200px; padding: 10px 14px; }
+  .color-picker-popup { min-width: 160px; }
+}

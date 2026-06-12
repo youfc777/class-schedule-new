@@ -1,0 +1,27 @@
+.time-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.time-select {
+  padding: 8px 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  cursor: pointer;
+  min-width: 52px;
+}
+
+.time-select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+}
+
+.time-separator {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
